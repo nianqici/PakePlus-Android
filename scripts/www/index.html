@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#14202c">
+<title>工作记录管家</title>
+<style>
+:root{
+  --fs:23px;
+  --bg:#14202c; --bg2:#182634; --card:#213040; --card2:#28384b;
+  --line:#32455a; --text:#e9f0f7; --sub:#9db0c4; --accent:#4d9de0;
+  --in:#ff6b5a; --out:#35c98a; --warn:#f0b429;
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:var(--fs);background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:"PingFang SC","Microsoft YaHei","Heiti SC",sans-serif;
+  font-size:1rem;line-height:1.5;
+  max-width:520px;margin:0 auto;min-height:100vh;
+  padding-bottom:calc(5.2rem + env(safe-area-inset-bottom));
+}
+button,input,select,textarea{font-family:inherit;font-size:1rem;color:inherit}
+input,select,textarea{
+  width:100%;background:var(--bg2);border:1.5px solid var(--line);
+  border-radius:var(--r);padding:.62em .7em;outline:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:3em}
+label{display:block;color:var(--sub);font-size:.8rem;margin:.55em 0 .3em}
+
+/* ---------- 头部 ---------- */
+header{
+  position:sticky;top:0;z-index:20;background:var(--bg2);
+  border-bottom:1px solid var(--line);
+  padding:.55em .8em calc(.55em);
+  display:flex;align-items:center;gap:.5em;
+}
+header h1{font-size:1.05rem;margin:0;font-weight:700;letter-spacing:1px}
+header .sp{flex:1}
+.mini-btn{
+  background:var(--card2);border:1px solid var(--line);border-radius:10px;
+  padding:.35em .6em;font-size:.78rem;color:var(--sub);
+}
+
+/* ---------- 通用 ---------- */
+.pad{padding:.7em .8em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:.7em .8em;margin-bottom:.6em}
+.row{display:flex;align-items:center;gap:.5em}
+.muted{color:var(--sub);font-size:.8rem}
+.big{font-size:1.5rem;font-weight:700}
+.amt-in{color:var(--in);font-weight:700}
+.amt-out{color:var(--out);font-weight:700}
+.scroll-x{display:flex;gap:.4em;overflow-x:auto;padding-bottom:.2em}
+.chip{
+  flex:0 0 auto;background:var(--card2);border:1.5px solid var(--line);
+  border-radius:999px;padding:.42em .9em;font-size:.9rem;
+}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#08131d;font-weight:700}
+.btn{
+  display:block;width:100%;background:var(--accent);color:#08131d;
+  border:none;border-radius:var(--r);padding:.68em;font-size:1rem;
+  font-weight:700;text-align:center;
+}
+.btn.ghost{background:var(--card2);color:var(--text);border:1.5px solid var(--line)}
+.btn.warn{background:var(--warn);color:#201500}
+.btn.danger{background:#5a2320;color:#ffb4ac;border:1.5px solid #7d312d}
+.btn.sm{width:auto;padding:.4em .8em;font-size:.85rem;border-radius:10px}
+.btn:active{opacity:.75}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.5em}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5em}
+
+/* ---------- 今日概览 ---------- */
+.summary{
+  background:linear-gradient(160deg,#22384e,#1b2b3c);
+  border:1px solid var(--line);border-radius:var(--r);padding:.8em;margin-bottom:.6em;
+}
+.summary .lab{color:var(--sub);font-size:.85rem}
+.summary .num{font-size:2.1rem;font-weight:800;line-height:1.2;margin:.1em 0}
+.summary .kv{display:flex;gap:1.2em;font-size:.9rem}
+
+.item{
+  display:flex;align-items:center;gap:.6em;padding:.55em 0;
+  border-bottom:1px dashed var(--line);
+}
+.item:last-child{border-bottom:none}
+.item .t{flex:1;min-width:0}
+.item .t b{font-weight:600}
+.item .t div{font-size:.78rem;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:.72rem;padding:.15em .5em;border-radius:6px;background:var(--card2);color:var(--sub);border:1px solid var(--line)}
+.tag.done{background:#1e4034;color:#7ee2b8;border-color:#2b6152}
+.tag.undone{background:#4a3a15;color:#f6cf6a;border-color:#6b5320}
+.tag.owe{background:#4a2320;color:#ff9c8f;border-color:#6d302b}
+
+.empty{text-align:center;color:var(--sub);padding:1.4em .5em;font-size:.9rem}
+.notice{background:#3a2a16;border:1px solid #6b5320;border-radius:var(--r);padding:.6em .8em;margin-bottom:.6em;color:#f6cf6a;font-size:.88rem}
+
+/* ---------- 底部导航 ---------- */
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:30;
+  background:var(--bg2);border-top:1px solid var(--line);
+  display:flex;padding:.35em 0 calc(.35em + env(safe-area-inset-bottom));
+  max-width:520px;margin:0 auto;
+}
+nav button{
+  flex:1;background:none;border:none;color:var(--sub);
+  padding:.3em 0;font-size:.8rem;display:flex;flex-direction:column;align-items:center;gap:.15em;
+}
+nav button .ic{font-size:1.35rem;line-height:1}
+nav button.on{color:var(--accent);font-weight:700}
+
+/* ---------- 弹层 ---------- */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:none}
+.mask.show{display:block}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--bg2);
+  border-top:1px solid var(--line);border-radius:18px 18px 0 0;
+  max-width:520px;margin:0 auto;max-height:90vh;overflow:auto;
+  padding:.8em .8em calc(1em + env(safe-area-inset-bottom));
+  transform:translateY(105%);transition:transform .22s ease;
+}
+.sheet.show{transform:translateY(0)}
+.sheet h2{font-size:1.1rem;margin:0 0 .3em}
+
+.seg{display:flex;gap:.5em;margin-bottom:.4em}
+.seg button{flex:1;background:var(--card2);border:1.5px solid var(--line);border-radius:var(--r);padding:.6em;font-weight:700}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#08131d}
+.seg button.on.out{background:var(--out);border-color:var(--out)}
+.seg button.on.in{background:var(--in);border-color:var(--in)}
+
+/* ---------- 图表 ---------- */
+.chart-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:.5em}
+svg.chart{width:100%;height:auto;display:block;touch-action:pan-y}
+.legend{display:flex;gap:1em;font-size:.78rem;color:var(--sub);margin-top:.3em}
+.legend i{display:inline-block;width:.7em;height:.7em;border-radius:2px;margin-right:.25em}
+
+.page{display:none}
+.page.on{display:block}
+
+table.stat{width:100%;border-collapse:collapse;font-size:.9rem}
+table.stat td{padding:.35em 0;border-bottom:1px dashed var(--line)}
+table.stat td:last-child{text-align:right;font-weight:700}
+.bar{height:.55em;border-radius:4px;background:var(--card2);overflow:hidden;margin-top:.25em}
+.bar i{display:block;height:100%}
+</style>
+</head>
+<body>
+
+<div id="bootMsg" style="padding:2.5em 1.2em;color:#9db0c4;font-size:.9rem;text-align:center;line-height:1.8">
+  正在打开…<br>
+  如果这行字一直不动，说明浏览器太旧或不支持，<br>请换 Chrome / Edge / 手机自带浏览器打开。
+</div>
+
+<header>
+  <h1 id="hdrTitle">工作记录管家</h1>
+  <span class="sp"></span>
+  <button class="mini-btn" id="btnQuickAdd">+ 记一笔</button>
+</header>
+
+<!-- ============ 今日 ============ -->
+<section class="page on" id="page-home">
+  <div class="pad">
+    <div class="row" style="margin-bottom:.6em">
+      <input type="date" id="homeDate" style="flex:1">
+      <button class="btn sm ghost" id="homeToday">今天</button>
+    </div>
+
+    <div class="summary">
+      <div class="lab">当天盈亏（收入 − 支出）</div>
+      <div class="num" id="dayProfit">¥0</div>
+      <div class="kv">
+        <span>收 <b class="amt-in" id="dayIn">¥0</b></span>
+        <span>支 <b class="amt-out" id="dayOut">¥0</b></span>
+      </div>
+    </div>
+
+    <div id="oweNotice"></div>
+
+    <div class="row" style="margin:.2em 0 .4em">
+      <b style="flex:1">这天的活</b>
+      <button class="btn sm ghost" id="btnAddJob">+ 接个活</button>
+    </div>
+    <div class="card" id="homeJobs"></div>
+
+    <div class="row" style="margin:.6em 0 .4em">
+      <b style="flex:1">这天的收支</b>
+    </div>
+    <div class="card" id="homeRecords"></div>
+  </div>
+</section>
+
+<!-- ============ 接活 ============ -->
+<section class="page" id="page-jobs">
+  <div class="pad">
+    <div class="scroll-x" id="jobFilter" style="margin-bottom:.5em">
+      <button class="chip on" data-f="all">全部</button>
+      <button class="chip" data-f="undone">没干完</button>
+      <button class="chip" data-f="owe">钱没收齐</button>
+      <button class="chip" data-f="done">已干完</button>
+    </div>
+    <div class="row" style="margin-bottom:.4em">
+      <input type="month" id="jobMonth" style="flex:1">
+      <button class="btn sm ghost" id="jobMonthClear">全部月份</button>
+    </div>
+    <div id="jobList"></div>
+    <button class="btn" id="btnAddJob2" style="margin-top:.4em">+ 接个活</button>
+  </div>
+</section>
+
+<!-- ============ 记账 ============ -->
+<section class="page" id="page-rec">
+  <div class="pad">
+    <div class="row" style="margin-bottom:.5em">
+      <input type="month" id="recMonth" style="flex:1">
+    </div>
+    <div class="summary">
+      <div class="lab">本月净利</div>
+      <div class="num" id="recNet">¥0</div>
+      <div class="kv">
+        <span>收 <b class="amt-in" id="recIn">¥0</b></span>
+        <span>支 <b class="amt-out" id="recOut">¥0</b></span>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:.6em">
+      <button class="btn" id="btnAddIn">+ 记收入</button>
+      <button class="btn ghost" id="btnAddOut">+ 记支出</button>
+    </div>
+    <div id="recList"></div>
+  </div>
+</section>
+
+<!-- ============ 月结 ============ -->
+<section class="page" id="page-month">
+  <div class="pad">
+    <div class="row" style="margin-bottom:.5em">
+      <input type="month" id="monMonth" style="flex:1">
+    </div>
+    <div class="summary">
+      <div class="lab">当月净利润</div>
+      <div class="num" id="monNet">¥0</div>
+      <div class="kv">
+        <span>总收入 <b class="amt-in" id="monIn">¥0</b></span>
+        <span>总支出 <b class="amt-out" id="monOut">¥0</b></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <b>每日盈亏曲线</b>
+      <div class="muted" id="chartTip" style="margin:.2em 0 .3em">点图上的点，看那天明细</div>
+      <div class="chart-wrap"><svg class="chart" id="chart" viewBox="0 0 360 190" preserveAspectRatio="none"></svg></div>
+      <div class="legend">
+        <span><i style="background:var(--in)"></i>收入</span>
+        <span><i style="background:var(--out)"></i>支出</span>
+        <span><i style="background:var(--accent)"></i>净盈亏</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <b>本月单子</b>
+      <div id="monJobs" style="margin-top:.3em"></div>
+    </div>
+
+    <div class="card">
+      <b>支出分类</b>
+      <div id="monOutCat" style="margin-top:.3em"></div>
+    </div>
+    <div class="card">
+      <b>收入分类</b>
+      <div id="monInCat" style="margin-top:.3em"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 设置 ============ -->
+<section class="page" id="page-set">
+  <div class="pad">
+    <div class="card">
+      <b>字体大小（全局生效）</b>
+      <div class="muted" style="margin:.2em 0 .5em">选好后自动保存，按钮一起变大</div>
+      <div class="grid2" id="fontBox">
+        <button class="btn ghost" data-fs="16">小</button>
+        <button class="btn ghost" data-fs="19">中</button>
+        <button class="btn ghost" data-fs="23">大</button>
+        <button class="btn ghost" data-fs="28">特大</button>
+      </div>
+      <div class="muted" style="margin-top:.5em">预览：工钱 1200 元，材料 320 元</div>
+    </div>
+
+    <div class="card">
+      <b>数据</b>
+      <div class="muted" style="margin:.2em 0 .5em">全部存在这台手机/电脑本地，不上传网络<br>当前存储：<b id="storeInfo">读取中…</b></div>
+      <div class="grid2">
+        <button class="btn ghost" id="btnExport">导出备份</button>
+        <button class="btn ghost" id="btnImport">导入备份</button>
+      </div>
+      <input type="file" id="fileInput" accept="application/json" style="display:none">
+      <button class="btn danger" id="btnReset" style="margin-top:.5em">重置所有信息</button>
+    </div>
+
+    <div class="card">
+      <b>自己写过的类别</b>
+      <div class="muted" style="margin:.2em 0 .4em">记账时选"其他"自己写的，会记在这里，点一下删掉（已记的账不受影响）</div>
+      <div id="setCats"></div>
+    </div>
+
+    <div class="card">
+      <b>提示</b>
+      <div class="muted" style="margin-top:.3em">
+        · 接活后，记账时把收支"挂到这单"，就能在【接活】里看到这单成本和赚多少。<br>
+        · 应收工钱填了但没收到，会出现在"钱没收齐"里。<br>
+        · 每天记一笔，月底自动算总账。
+      </div>
+    </div>
+    <div class="muted" style="text-align:center;padding:.6em">v1.0 · 本地保存</div>
+  </div>
+</section>
+
+<nav>
+  <button data-p="home" class="on"><span class="ic">📅</span>今日</button>
+  <button data-p="jobs"><span class="ic">🧰</span>接活</button>
+  <button data-p="rec"><span class="ic">💰</span>记账</button>
+  <button data-p="month"><span class="ic">📊</span>月结</button>
+  <button data-p="set"><span class="ic">⚙️</span>设置</button>
+</nav>
+
+<div class="mask" id="mask"></div>
+<div class="sheet" id="sheet"></div>
+
+<script>
+/* ================= 存储：IndexedDB，失败自动降级 localStorage ================= */
+var DBNAME='gzjl', db=null, driver='ls';
+
+function showErr(t){
+  var d=document.createElement('div');
+  d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:999;background:#5a2320;color:#ffd9d4;padding:.5em .8em;font-size:.78rem;line-height:1.4';
+  d.textContent='提示：'+t;
+  document.body.appendChild(d);
+  setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d)},9000);
+}
+window.onerror=function(m,s,l,c){ try{showErr('脚本出错 '+m+'（第'+l+'行）')}catch(e){} };
+
+/* --- localStorage 驱动 --- */
+function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]') }catch(e){ return [] } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)) }catch(e){ showErr('本地存储写不进去了') } }
+function lsSettings(){ try{ return JSON.parse(localStorage.getItem('gzjl_settings')||'{}') }catch(e){ return {} } }
+
+/* --- 统一接口 --- */
+function getAll(name){
+  if(driver==='idb') return new Promise(function(res,rej){
+    var q=db.transaction(name,'readonly').objectStore(name).getAll();
+    q.onsuccess=function(){res(q.result)}; q.onerror=function(){res(lsGet('gzjl_'+name))};
+  });
+  return Promise.resolve(lsGet('gzjl_'+name));
+}
+function put(name,obj){
+  if(driver==='idb') return new Promise(function(res,rej){
+    try{
+      var q=db.transaction(name,'readwrite').objectStore(name).put(obj);
+      q.onsuccess=function(){res(q.result)};
+      q.onerror=function(){ res(lsPut(name,obj)) };
+    }catch(e){ res(lsPut(name,obj)) }
+  });
+  return Promise.resolve(lsPut(name,obj));
+}
+function lsPut(name,obj){
+  var arr=lsGet('gzjl_'+name);
+  if(obj.id==null){ obj.id=uid(); arr.push(obj); }
+  else{ var i=-1; arr.forEach(function(x,k){if(x.id===obj.id)i=k});
+        if(i>=0) arr[i]=obj; else arr.push(obj); }
+  lsSet('gzjl_'+name,arr);
+  return obj.id;
+}
+function del(name,id){
+  if(driver==='idb') return new Promise(function(res){
+    try{
+      var q=db.transaction(name,'readwrite').objectStore(name).delete(id);
+      q.onsuccess=function(){res()}; q.onerror=function(){lsDel(name,id);res()};
+    }catch(e){ lsDel(name,id); res() }
+  });
+  lsDel(name,id); return Promise.resolve();
+}
+function lsDel(name,id){
+  lsSet('gzjl_'+name, lsGet('gzjl_'+name).filter(function(x){return x.id!==id}));
+}
+function clearStore(name){
+  if(driver==='idb') return new Promise(function(res){
+    try{
+      var q=db.transaction(name,'readwrite').objectStore(name).clear();
+      q.onsuccess=function(){res()}; q.onerror=function(){lsSet('gzjl_'+name,[]);res()};
+    }catch(e){ lsSet('gzjl_'+name,[]); res() }
+  });
+  lsSet('gzjl_'+name,[]); return Promise.resolve();
+}
+function getSet(k,dft){
+  if(driver==='idb') return new Promise(function(res){
+    try{
+      var q=db.transaction('settings','readonly').objectStore('settings').get(k);
+      q.onsuccess=function(){res(q.result?q.result.v:dft)}; q.onerror=function(){res(lsSettings()[k]!=null?lsSettings()[k]:dft)};
+    }catch(e){ var v=lsSettings()[k]; res(v!=null?v:dft) }
+  });
+  var v=lsSettings()[k]; return Promise.resolve(v!=null?v:dft);
+}
+function setSet(k,v){
+  if(driver==='idb') return new Promise(function(res){
+    try{
+      var q=db.transaction('settings','readwrite').objectStore('settings').put({k:k,v:v});
+      q.onsuccess=function(){res(q.result)}; q.onerror=function(){lsSetSet(k,v);res()};
+    }catch(e){ lsSetSet(k,v); res() }
+  });
+  lsSetSet(k,v); return Promise.resolve();
+}
+function lsSetSet(k,v){ var s=lsSettings(); s[k]=v; try{localStorage.setItem('gzjl_settings',JSON.stringify(s))}catch(e){} }
+
+/* --- 初始化（带超时，绝不让页面卡住） --- */
+function initStore(){
+  return new Promise(function(res){
+    var done=false;
+    function finish(d){ if(done)return; done=true; driver=d; res(d); }
+    setTimeout(function(){ if(!done){ finish('ls'); showErr('数据库没开起来，已改用本机备用存储，功能一样。') } },2500);
+    try{
+      if(!window.indexedDB){ finish('ls'); return; }
+      var r=indexedDB.open(DBNAME,1);
+      r.onupgradeneeded=function(e){
+        var d=e.target.result;
+        if(!d.objectStoreNames.contains('jobs')) d.createObjectStore('jobs',{keyPath:'id',autoIncrement:true});
+        if(!d.objectStoreNames.contains('records')){
+          var s=d.createObjectStore('records',{keyPath:'id',autoIncrement:true});
+          s.createIndex('date','date'); s.createIndex('jobId','jobId');
+        }
+        if(!d.objectStoreNames.contains('settings')) d.createObjectStore('settings',{keyPath:'k'});
+      };
+      r.onsuccess=function(e){ db=e.target.result; finish('idb') };
+      r.onerror=function(){ finish('ls') };
+      r.onblocked=function(){ finish('ls') };
+    }catch(e){ finish('ls') }
+  });
+}
+
+/* ================= 常量 ================= */
+var IN_CATS=['这单工钱','客户打款','日结','尾款','其他'];
+var OUT_CATS=['进货/材料','油费路费','餐费','工具磨损维修','给帮忙的工钱','其他'];
+
+/* ================= 状态 ================= */
+var jobs=[], records=[], settings={fs:23, customCats:{in:[],out:[]}};
+function catList(t){
+  var base=(t==='in'?IN_CATS:OUT_CATS).filter(function(c){return c!=='其他'});
+  var cus=(settings.customCats && settings.customCats[t]) || [];
+  return base.concat(cus, ['其他']);
+}
+function saveCustomCat(t,name){
+  if(!name) return;
+  if(!settings.customCats) settings.customCats={in:[],out:[]};
+  if(!settings.customCats[t]) settings.customCats[t]=[];
+  var arr=settings.customCats[t], i=arr.indexOf(name);
+  if(i>=0) arr.splice(i,1);
+  arr.unshift(name);
+  if(arr.length>8) arr.length=8;
+  setSet('customCats',settings.customCats);
+}
+var curPage='home', jobFilter='all', selDay=null;
+
+/* ================= 工具 ================= */
+function $(s){return document.querySelector(s)}
+function $$(s){return Array.prototype.slice.call(document.querySelectorAll(s))}
+function today(){return fmt(new Date())}
+function fmt(d){
+  var m=d.getMonth()+1, day=d.getDate();
+  return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
+}
+function monthOf(dateStr){return dateStr.slice(0,7)}
+function curMonth(){return today().slice(0,7)}
+function money(n){
+  n=Number(n)||0;
+  var neg=n<0; n=Math.abs(n);
+  var s=(Math.round(n*100)/100).toFixed(2).replace(/\.00$/,'');
+  return (neg?'-¥':'¥')+s;
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+})}
+function uid(){return Date.now()+Math.random()}
+function copy(o){var n={},k;for(k in o){if(Object.prototype.hasOwnProperty.call(o,k))n[k]=o[k]}return n}
+
+/* ================= 计算 ================= */
+function jobStat(j){
+  var inAmt=0,outAmt=0;
+  records.forEach(function(r){
+    if(r.jobId===j.id){ if(r.type==='in') inAmt+=Number(r.amount)||0; else outAmt+=Number(r.amount)||0; }
+  });
+  var quote=Number(j.quote)||0;
+  return {inAmt:inAmt,outAmt:outAmt,quote:quote,
+    profit:inAmt-outAmt, owe:Math.max(0,quote-inAmt),
+    hasIncome:inAmt>0, paid:quote>0&&inAmt>=quote};
+}
+function dayStat(dateStr){
+  var i=0,o=0;
+  records.forEach(function(r){ if(r.date===dateStr){ if(r.type==='in') i+=Number(r.amount)||0; else o+=Number(r.amount)||0; }});
+  return {inAmt:i,outAmt:o,profit:i-o};
+}
+function monthStat(m){
+  var i=0,o=0;
+  records.forEach(function(r){ if(monthOf(r.date)===m){ if(r.type==='in') i+=Number(r.amount)||0; else o+=Number(r.amount)||0; }});
+  return {inAmt:i,outAmt:o,profit:i-o};
+}
+function daysInMonth(m){
+  var p=m.split('-'); return new Date(Number(p[0]),Number(p[1]),0).getDate();
+}
+
+/* ================= 弹层 ================= */
+function openSheet(html){
+  $('#sheet').innerHTML=html;
+  $('#mask').classList.add('show');
+  requestAnimationFrame(function(){$('#sheet').classList.add('show')});
+}
+function closeSheet(){
+  $('#sheet').classList.remove('show');
+  $('#mask').classList.remove('show');
+  setTimeout(function(){ if(!$('#sheet').classList.contains('show')) $('#sheet').innerHTML=''; },250);
+}
+$('#mask').addEventListener('click',closeSheet);
+
+/* ================= 表单：接活 ================= */
+function jobForm(j){
+  j=j||{};
+  var opts=recordsOptions(j.id);
+  openSheet(
+    '<h2>'+(j.id?'改这个活':'接个新活')+'</h2>'+
+    '<label>日期</label><input type="date" id="f_date" value="'+(j.date||today())+'">'+
+    '<label>接到什么活</label><input id="f_title" placeholder="例如：贴瓷砖 / 搬运 / 水电" value="'+esc(j.title)+'">'+
+    '<label>在哪个地方干</label><input id="f_place" placeholder="例如：城东小区3栋" value="'+esc(j.place)+'">'+
+    '<label>客户名</label><input id="f_customer" value="'+esc(j.customer)+'">'+
+    '<label>联系电话</label><input id="f_phone" type="tel" inputmode="tel" value="'+esc(j.phone)+'">'+
+    '<label>应收工钱（元）</label><input id="f_quote" type="number" inputmode="decimal" placeholder="0" value="'+(j.quote||'')+'">'+
+    '<label>活干没干完</label>'+
+    '<div class="seg"><button id="f_done1" class="'+(j.done?'on':'')+'">干完了</button><button id="f_done0" class="'+(!j.done?'on':'')+'">还没干完</button></div>'+
+    '<label>下次联系（时间 / 要办的事）</label><input id="f_next" value="'+esc(j.nextContact)+'">'+
+    '<label>备注</label><textarea id="f_remark" placeholder="随便写">'+esc(j.remark)+'</textarea>'+
+    '<div style="height:.6em"></div>'+
+    '<button class="btn" id="f_save">保存</button>'+
+    (j.id?'<button class="btn danger" id="f_del" style="margin-top:.5em">删除这个活</button>':'')+
+    '<button class="btn ghost" id="f_cancel" style="margin-top:.5em">取消</button>'
+  );
+  var done=!!j.done;
+  $('#f_done1').onclick=function(){done=true;$('#f_done1').classList.add('on');$('#f_done0').classList.remove('on')};
+  $('#f_done0').onclick=function(){done=false;$('#f_done0').classList.add('on');$('#f_done1').classList.remove('on')};
+  $('#f_cancel').onclick=closeSheet;
+  $('#f_save').onclick=function(){
+    var t=$('#f_title').value.trim();
+    if(!t){alert('写上接到什么活');return}
+    var obj={date:$('#f_date').value||today(),title:t,place:$('#f_place').value.trim(),
+      customer:$('#f_customer').value.trim(),phone:$('#f_phone').value.trim(),
+      quote:Number($('#f_quote').value)||0,done:done,
+      nextContact:$('#f_next').value.trim(),remark:$('#f_remark').value.trim()};
+    if(j.id){obj.id=j.id;obj.createdAt=j.createdAt}
+    else{obj.createdAt=uid()}
+    put('jobs',obj).then(function(){closeSheet();reload()});
+  };
+  if(j.id) $('#f_del').onclick=function(){
+    if(!confirm('删除这个活？账目会保留'))return;
+    del('jobs',j.id).then(function(){closeSheet();reload()});
+  };
+}
+function recordsOptions(){return ''}
+
+/* ================= 表单：记账 ================= */
+function recForm(type,rec){
+  rec=rec||{};
+  var t=rec.type||type||'in';
+  openSheet(
+    '<h2>'+(rec.id?'改这笔记账':'记一笔')+'</h2>'+
+    '<div class="seg">'+
+      '<button id="t_in" class="in '+(t==='in'?'on':'')+'">收入</button>'+
+      '<button id="t_out" class="out '+(t==='out'?'on':'')+'">支出</button>'+
+    '</div>'+
+    '<label>金额（元）</label><input id="f_amt" type="number" inputmode="decimal" placeholder="0" value="'+(rec.amount||'')+'" style="font-size:1.6rem;font-weight:700;padding:.4em .6em">'+
+    '<label>类别</label><div class="scroll-x" id="f_cats"></div>'+
+    '<div id="f_other_box" style="display:none;margin-top:.4em">'+
+      '<input id="f_other" placeholder="自己写类别，例如：请人吃饭 / 罚款" maxlength="12">'+
+    '</div>'+
+    '<label>日期</label><input type="date" id="f_date" value="'+(rec.date||today())+'">'+
+    '<label>挂到哪个活（可不选）</label><select id="f_job"></select>'+
+    '<label>备注</label><input id="f_remark" placeholder="选填" value="'+esc(rec.remark)+'">'+
+    '<div style="height:.6em"></div>'+
+    '<button class="btn" id="f_save">保存</button>'+
+    (rec.id?'<button class="btn danger" id="f_del" style="margin-top:.5em">删除这笔</button>':'')+
+    '<button class="btn ghost" id="f_cancel" style="margin-top:.5em">取消</button>'
+  );
+  var cat=rec.category||(t==='in'?IN_CATS[0]:OUT_CATS[0]);
+  var otherText='';
+  function drawCats(){
+    var arr=catList(t);
+    if(arr.indexOf(cat)<0){ otherText=cat; cat='其他'; }   // 自定义过的类别 → 归到"其他"并回填
+    $('#f_cats').innerHTML=arr.map(function(c){
+      return '<button class="chip '+(c===cat?'on':'')+'" data-c="'+esc(c)+'">'+esc(c)+'</button>';
+    }).join('');
+    $$('#f_cats .chip').forEach(function(b){
+      b.onclick=function(){
+        cat=b.dataset.c;
+        if(cat!=='其他') otherText='';
+        drawCats();
+        if(cat==='其他'){ try{$('#f_other').focus()}catch(e){} }
+      };
+    });
+    var box=$('#f_other_box');
+    box.style.display=(cat==='其他')?'block':'none';
+    $('#f_other').value=(cat==='其他')?otherText:'';
+  }
+  function drawJobs(){
+    var list=jobs.slice().sort(function(a,b){return b.date<a.date?-1:1});
+    $('#f_job').innerHTML='<option value="">不挂到活（日常收支）</option>'+
+      list.map(function(j){return '<option value="'+j.id+'" '+(rec.jobId===j.id?'selected':'')+'>'+esc(j.title)+' · '+j.date.slice(5)+'</option>'}).join('');
+  }
+  function setType(x){
+    if(t===x) return;
+    t=x; otherText=''; cat=(t==='in'?IN_CATS[0]:OUT_CATS[0]);
+    $('#t_in').classList.toggle('on',t==='in');
+    $('#t_out').classList.toggle('on',t==='out');
+    drawCats();
+  }
+  $('#t_in').onclick=function(){setType('in')};
+  $('#t_out').onclick=function(){setType('out')};
+  drawCats(); drawJobs();
+  $('#f_cancel').onclick=closeSheet;
+  $('#f_save').onclick=function(){
+    var a=Number($('#f_amt').value);
+    if(!a){alert('填个金额');return}
+    var finalCat=cat;
+    if(cat==='其他'){
+      var ov=$('#f_other').value.trim();
+      if(ov){ finalCat=ov; saveCustomCat(t,ov); }
+    }
+    if(!finalCat) finalCat='其他';
+    var obj={type:t,amount:a,category:finalCat,date:$('#f_date').value||today(),
+      jobId:Number($('#f_job').value)||null,remark:$('#f_remark').value.trim()};
+    if(rec.id) obj.id=rec.id;
+    put('records',obj).then(function(){closeSheet();reload()});
+  };
+  if(rec.id) $('#f_del').onclick=function(){
+    if(!confirm('删除这笔记账？'))return;
+    del('records',rec.id).then(function(){closeSheet();reload()});
+  };
+}
+
+/* ================= 渲染 ================= */
+function renderHome(){
+  var d=$('#homeDate').value||today();
+  $('#hdrTitle').textContent=d===today()?'今天 · 工作记录':d.slice(5)+' 记录';
+  var s=dayStat(d);
+  $('#dayProfit').textContent=money(s.profit);
+  $('#dayProfit').className='num '+(s.profit>=0?'amt-in':'amt-out');
+  $('#dayIn').textContent=money(s.inAmt);
+  $('#dayOut').textContent=money(s.outAmt);
+
+  // 未结款提醒
+  var owe=jobs.filter(function(j){return jobStat(j).owe>0});
+  $('#oweNotice').innerHTML= owe.length?
+    '<div class="notice">💰 还有 '+owe.length+' 个活的工钱没收齐：'+owe.slice(0,3).map(function(j){return esc(j.title)+' '+money(jobStat(j).owe)}).join('、')+(owe.length>3?' 等':'')+'</div>':'';
+
+  var dayJobs=jobs.filter(function(j){return j.date===d}).sort(function(a,b){return a.createdAt<b.createdAt?1:-1});
+  $('#homeJobs').innerHTML= dayJobs.length? dayJobs.map(jobCardHTML).join('') : '<div class="empty">这天还没接活</div>';
+  bindJobs('#homeJobs');
+
+  var rs=records.filter(function(r){return r.date===d}).sort(function(a,b){return a.id<b.id?1:-1});
+  $('#homeRecords').innerHTML= rs.length? rs.map(recRowHTML).join('') : '<div class="empty">这天还没记账</div>';
+  bindRecs('#homeRecords');
+}
+
+function jobCardHTML(j){
+  var s=jobStat(j);
+  return '<div class="item" data-job="'+j.id+'">'+
+    '<div class="t"><b>'+esc(j.title)+'</b>'+
+      '<div>'+(j.place?esc(j.place):'没写地点')+(j.customer?' · '+esc(j.customer):'')+'</div>'+
+      '<div style="margin-top:.2em">'+
+        '<span class="tag '+(j.done?'done':'undone')+'">'+(j.done?'干完了':'还没干完')+'</span> '+
+        (s.owe>0?'<span class="tag owe">欠收 '+money(s.owe)+'</span>':'')+
+        (s.inAmt>0?' <span class="tag">已收 '+money(s.inAmt)+'</span>':'')+
+        (s.outAmt>0?' <span class="tag">成本 '+money(s.outAmt)+'</span>':'')+
+      '</div>'+
+    '</div>'+
+    '<div style="text-align:right"><div class="'+(s.profit>=0?'amt-in':'amt-out')+'">'+money(s.profit)+'</div>'+
+    '<div class="muted">'+j.date.slice(5)+'</div></div>'+
+  '</div>';
+}
+function recRowHTML(r){
+  var j=r.jobId?jobs.filter(function(x){return x.id===r.jobId})[0]:null;
+  return '<div class="item" data-rec="'+r.id+'">'+
+    '<div class="t"><b>'+esc(r.category)+(j?' · '+esc(j.title):'')+'</b>'+
+      '<div>'+(r.remark?esc(r.remark):(j?'挂在活上':'日常'))+'</div></div>'+
+    '<div class="'+(r.type==='in'?'amt-in':'amt-out')+'" style="font-size:1.1rem">'+(r.type==='in'?'+':'-')+money(r.amount)+'</div>'+
+  '</div>';
+}
+function bindJobs(sel){
+  $$(sel+' [data-job]').forEach(function(el){
+    el.onclick=function(){
+      var j=jobs.filter(function(x){return x.id===Number(el.dataset.job)})[0];
+      if(j) jobForm(j);
+    };
+  });
+}
+function bindRecs(sel){
+  $$(sel+' [data-rec]').forEach(function(el){
+    el.onclick=function(){
+      var r=records.filter(function(x){return x.id===Number(el.dataset.rec)})[0];
+      if(r) recForm(r.type,r);
+    };
+  });
+}
+
+function renderJobs(){
+  var m=$('#jobMonth').value||'';
+  var list=jobs.filter(function(j){
+    if(m && monthOf(j.date)!==m) return false;
+    if(jobFilter==='undone') return !j.done;
+    if(jobFilter==='done') return !!j.done;
+    if(jobFilter==='owe') return jobStat(j).owe>0;
+    return true;
+  }).sort(function(a,b){return a.date<b.date?1:(a.date>b.date?-1:0)});
+
+  var tot={inAmt:0,outAmt:0,owe:0};
+  list.forEach(function(j){var s=jobStat(j);tot.inAmt+=s.inAmt;tot.outAmt+=s.outAmt;tot.owe+=s.owe});
+
+  var head='<div class="card"><div class="row"><div class="t" style="flex:1"><b>共 '+list.length+' 个活</b>'+
+    '<div class="muted">已收 '+money(tot.inAmt)+' · 成本 '+money(tot.outAmt)+' · 净 '+money(tot.inAmt-tot.outAmt)+'</div></div>'+
+    '<div class="'+(tot.owe>0?'amt-in':'')+'" style="font-weight:700">'+(tot.owe>0?'欠收 '+money(tot.owe):'已收齐')+'</div></div></div>';
+
+  $('#jobList').innerHTML=head+(list.length?list.map(jobCardHTML).join(''):'<div class="empty">还没有活</div>');
+  bindJobs('#jobList');
+}
+
+function renderRec(){
+  var m=$('#recMonth').value||curMonth();
+  var s=monthStat(m);
+  $('#recNet').textContent=money(s.profit);
+  $('#recNet').className='num '+(s.profit>=0?'amt-in':'amt-out');
+  $('#recIn').textContent=money(s.inAmt);
+  $('#recOut').textContent=money(s.outAmt);
+
+  var list=records.filter(function(r){return monthOf(r.date)===m})
+    .sort(function(a,b){return a.date<b.date?1:(a.date>b.date?-1:(b.id-a.id))});
+  var html='',cur='';
+  list.forEach(function(r){
+    if(r.date!==cur){cur=r.date;
+      var ds=dayStat(cur);
+      html+='<div class="row" style="margin:.5em 0 .1em"><b>'+cur.slice(5)+'</b><span class="sp" style="flex:1"></span>'+
+        '<span class="muted">净 <b class="'+(ds.profit>=0?'amt-in':'amt-out')+'">'+money(ds.profit)+'</b></span></div>';
+    }
+    html+='<div class="card" style="padding:.5em .7em;margin-bottom:.35em">'+recRowHTML(r)+'</div>';
+  });
+  $('#recList').innerHTML=html||'<div class="empty">这个月还没记账</div>';
+  bindRecs('#recList');
+}
+
+function renderMonth(){
+  var m=$('#monMonth').value||curMonth();
+  var s=monthStat(m);
+  $('#monNet').textContent=money(s.profit);
+  $('#monNet').className='num '+(s.profit>=0?'amt-in':'amt-out');
+  $('#monIn').textContent=money(s.inAmt);
+  $('#monOut').textContent=money(s.outAmt);
+
+  var n=daysInMonth(m), data=[], maxAbs=1;
+  for(var i=1;i<=n;i++){
+    var d=m+'-'+(i<10?'0':'')+i, st=dayStat(d);
+    data.push({day:i,date:d,inAmt:st.inAmt,outAmt:st.outAmt,p:st.profit});
+    maxAbs=Math.max(maxAbs,Math.abs(st.profit),st.inAmt,st.outAmt);
+  }
+  drawChart(data,maxAbs,m);
+
+  var mj=jobs.filter(function(j){return monthOf(j.date)===m});
+  var tp=0,tc=0;
+  mj.forEach(function(j){var st=jobStat(j);tp+=st.inAmt;tc+=st.outAmt});
+  $('#monJobs').innerHTML= mj.length?
+    '<table class="stat"><tr><td>单子数</td><td>'+mj.length+'</td></tr>'+
+    '<tr><td>挂单收入</td><td class="amt-in">'+money(tp)+'</td></tr>'+
+    '<tr><td>挂单成本</td><td class="amt-out">'+money(tc)+'</td></tr>'+
+    '<tr><td>挂单净赚</td><td class="'+(tp-tc>=0?'amt-in':'amt-out')+'">'+money(tp-tc)+'</td></tr></table>'
+    :'<div class="empty">这个月没接活</div>';
+
+  $('#monOutCat').innerHTML=catTable(m,'out');
+  $('#monInCat').innerHTML=catTable(m,'in');
+}
+
+function catTable(m,type){
+  var arr=catList(type);
+  var map={},tot=0,keys=[];
+  records.forEach(function(r){
+    if(monthOf(r.date)===m && r.type===type){
+      var c=r.category||'其他';
+      if(map[c]==null){ map[c]=0; keys.push(c); }
+      map[c]+=(Number(r.amount)||0); tot+=Number(r.amount)||0;
+    }
+  });
+  keys.sort(function(a,b){return map[b]-map[a]});
+  var rows=keys.filter(function(c){return map[c]>0});
+  if(!rows.length) return '<div class="empty">没有记录</div>';
+  var mx=Math.max.apply(null,rows.map(function(c){return map[c]}));
+  return '<table class="stat">'+rows.map(function(c){
+    return '<tr><td>'+c+'<div class="bar"><i style="width:'+(map[c]/mx*100)+'%;background:'+(type==='out'?'var(--out)':'var(--in)')+'"></i></div></td>'+
+      '<td><span class="'+(type==='in'?'amt-in':'amt-out')+'">'+money(map[c])+'</span><div class="muted">'+(tot?Math.round(map[c]/tot*100):0)+'%</div></td></tr>';
+  }).join('')+'</table>';
+}
+
+/* ================= 图表 ================= */
+function drawChart(data,maxAbs,m){
+  var W=360,H=190,pl=8,pr=8,pt=14,pb=22;
+  var innerH=H-pt-pb, n=data.length;
+  var step=(W-pl-pr)/n;
+  var zeroY=pt+innerH/2;
+  var scale=function(v){return v/(maxAbs*1.15)*(innerH/2)};
+  var x=function(i){return pl+step*(i+0.5)};
+
+  var svg='';
+  // 网格 + 零线
+  svg+='<line x1="'+pl+'" y1="'+zeroY+'" x2="'+(W-pr)+'" y2="'+zeroY+'" stroke="#3a4f66" stroke-width="1" stroke-dasharray="3 3"/>';
+  svg+='<text x="4" y="'+(zeroY+4)+'" fill="#7d90a5" font-size="9">0</text>';
+
+  // 收入/支出柱
+  data.forEach(function(d,i){
+    var bw=step*0.34;
+    if(d.inAmt>0){
+      var h=scale(d.inAmt);
+      svg+='<rect x="'+(x(i)-bw-1)+'" y="'+(zeroY-h)+'" width="'+bw+'" height="'+h+'" fill="#ff6b5a" opacity="0.55" rx="1.5"/>';
+    }
+    if(d.outAmt>0){
+      var h2=scale(d.outAmt);
+      svg+='<rect x="'+(x(i)+1)+'" y="'+zeroY+'" width="'+bw+'" height="'+h2+'" fill="#35c98a" opacity="0.55" rx="1.5"/>';
+    }
+  });
+
+  // 净盈亏折线
+  var pts=data.map(function(d,i){return x(i)+','+(zeroY-scale(d.p))}).join(' ');
+  svg+='<polyline points="'+pts+'" fill="none" stroke="#4d9de0" stroke-width="2.2" stroke-linejoin="round"/>';
+  data.forEach(function(d,i){
+    var y=zeroY-scale(d.p);
+    var sel=selDay===d.date;
+    svg+='<circle cx="'+x(i)+'" cy="'+y+'" r="'+(sel?4.2:2.6)+'" fill="'+(d.p>=0?'#ff6b5a':'#35c98a')+'" stroke="#14202c" stroke-width="1"/>';
+  });
+
+  // 点击热区
+  data.forEach(function(d,i){
+    svg+='<rect class="hit" data-day="'+d.date+'" x="'+(pl+step*i)+'" y="0" width="'+step+'" height="'+H+'" fill="transparent"/>';
+  });
+
+  // X 轴刻度
+  var marks=[1,Math.ceil(n/4),Math.ceil(n/2),Math.ceil(n*3/4),n];
+  marks.forEach(function(k,idx){
+    if(idx>0&&k===marks[idx-1])return;
+    svg+='<text x="'+x(k-1)+'" y="'+(H-6)+'" fill="#7d90a5" font-size="9" text-anchor="middle">'+k+'</text>';
+  });
+
+  $('#chart').innerHTML=svg;
+  $$('#chart .hit').forEach(function(el){
+    el.onclick=function(){
+      selDay=el.dataset.day;
+      var d=data.filter(function(x){return x.date===selDay})[0];
+      $('#chartTip').innerHTML='<b>'+selDay.slice(5)+'</b> 收 '+money(d.inAmt)+' · 支 '+money(d.outAmt)+' · 净 <b class="'+(d.p>=0?'amt-in':'amt-out')+'">'+money(d.p)+'</b>';
+      drawChart(data,maxAbs,m);
+    };
+  });
+}
+
+/* ================= 设置 ================= */
+function renderSet(){
+  var box=document.getElementById('setCats');
+  if(!box) return;
+  var html='';
+  ['in','out'].forEach(function(t){
+    var arr=(settings.customCats&&settings.customCats[t])||[];
+    html+='<div class="muted" style="margin:.35em 0 .2em">'+(t==='in'?'收入':'支出')+'</div>';
+    html+= arr.length
+      ? '<div class="scroll-x">'+arr.map(function(c,i){
+          return '<button class="chip" data-t="'+t+'" data-i="'+i+'">'+esc(c)+'  ✕</button>'}).join('')+'</div>'
+      : '<div class="muted">还没自己写过</div>';
+  });
+  box.innerHTML=html;
+  $$('#setCats .chip').forEach(function(b){
+    b.onclick=function(){
+      var t=b.dataset.t, i=Number(b.dataset.i);
+      var name=settings.customCats[t][i];
+      if(!confirm('删掉类别「'+name+'」？已经记过的账不受影响')) return;
+      settings.customCats[t].splice(i,1);
+      setSet('customCats',settings.customCats);
+      renderSet();
+    };
+  });
+}
+function applyFont(px){
+  document.documentElement.style.setProperty('--fs',px+'px');
+  $$('#fontBox button').forEach(function(b){
+    var on=Number(b.dataset.fs)===Number(px);
+    b.classList.toggle('ghost',!on);
+    b.style.background=on?'var(--accent)':'';
+    b.style.color=on?'#08131d':'';
+  });
+}
+$$('#fontBox button').forEach(function(b){
+  b.onclick=function(){
+    var px=Number(b.dataset.fs);
+    settings.fs=px; applyFont(px); setSet('fs',px);
+  };
+});
+
+$('#btnReset').onclick=function(){
+  if(!confirm('确定要清空全部记录吗？活、账目都会删掉，不能恢复。'))return;
+  if(!confirm('再确认一次：真的清空？'))return;
+  Promise.all([clearStore('jobs'),clearStore('records')]).then(function(){reload();alert('已清空')});
+};
+$('#btnExport').onclick=function(){
+  var data={jobs:jobs,records:records,exportAt:new Date().toISOString()};
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='工作记录备份_'+today()+'.json';
+  a.click();
+};
+$('#btnImport').onclick=function(){$('#fileInput').click()};
+$('#fileInput').onchange=function(e){
+  var f=e.target.files[0]; if(!f)return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var d=JSON.parse(fr.result);
+      if(!d.jobs||!d.records) throw 0;
+      if(!confirm('导入 '+d.jobs.length+' 个活、'+d.records.length+' 笔账？会覆盖现在的。'))return;
+      Promise.all([clearStore('jobs'),clearStore('records')]).then(function(){
+        return Promise.all(d.jobs.map(function(j){var o=copy(j);delete o.id;return put('jobs',o)}))
+          .then(function(){return Promise.all(d.records.map(function(r){var o=copy(r);delete o.id;return put('records',o)}))});
+      }).then(function(){reload();alert('导入好了')});
+    }catch(err){alert('这个文件读不了')}
+  };
+  fr.readAsText(f);
+  e.target.value='';
+};
+
+/* ================= 导航 ================= */
+var PAGE_TITLE={home:'工作记录管家',jobs:'接活记录',rec:'收支记账',month:'月结算',set:'设置'};
+function go(p){
+  curPage=p;
+  $('#hdrTitle').textContent=PAGE_TITLE[p];
+  $$('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.p===p)});
+  $$('.page').forEach(function(s){s.classList.toggle('on',s.id==='page-'+p)});
+  render();
+}
+$$('nav button').forEach(function(b){b.onclick=function(){go(b.dataset.p)}});
+
+/* ================= 事件 ================= */
+$('#btnQuickAdd').onclick=function(){recForm('in')};
+$('#btnAddIn').onclick=function(){recForm('in')};
+$('#btnAddOut').onclick=function(){recForm('out')};
+$('#btnAddJob').onclick=function(){jobForm()};
+$('#btnAddJob2').onclick=function(){jobForm()};
+$('#homeDate').onchange=renderHome;
+$('#homeToday').onclick=function(){$('#homeDate').value=today();renderHome()};
+$('#jobMonth').onchange=renderJobs;
+$('#jobMonthClear').onclick=function(){$('#jobMonth').value='';renderJobs()};
+$('#recMonth').onchange=renderRec;
+$('#monMonth').onchange=function(){selDay=null;$('#chartTip').textContent='点图上的点，看那天明细';renderMonth()};
+$$('#jobFilter .chip').forEach(function(b){
+  b.onclick=function(){
+    jobFilter=b.dataset.f;
+    $$('#jobFilter .chip').forEach(function(x){x.classList.toggle('on',x===b)});
+    renderJobs();
+  };
+});
+
+/* ================= 启动 ================= */
+function render(){
+  if(curPage==='home')renderHome();
+  else if(curPage==='jobs')renderJobs();
+  else if(curPage==='rec')renderRec();
+  else if(curPage==='month')renderMonth();
+  else if(curPage==='set')renderSet();
+}
+function reload(){
+  Promise.all([getAll('jobs'),getAll('records')]).then(function(r){
+    jobs=r[0]||[];records=r[1]||[];render();
+  },function(e){
+    jobs=[];records=[];render();showErr('数据读取失败，先显示空表');
+  });
+}
+function boot(){
+  var bm=document.getElementById('bootMsg'); if(bm&&bm.parentNode) bm.parentNode.removeChild(bm);
+  try{
+    $('#homeDate').value=today();
+    $('#recMonth').value=curMonth();
+    $('#monMonth').value=curMonth();
+    $('#jobMonth').value='';
+  }catch(e){}
+  render();                      // 先出界面，不等数据
+  initStore().then(function(d){
+    try{
+      var el=document.getElementById('storeInfo');
+      if(el) el.textContent = (d==='idb'?'本机数据库（IndexedDB）':'备用本地存储');
+    }catch(e){}
+    return Promise.all([getSet('fs',23), getSet('customCats',{in:[],out:[]})]);
+  }).then(function(v){
+    settings.fs=v[0];
+    settings.customCats=v[1]||{in:[],out:[]};
+    applyFont(v[0]); reload();
+  }).catch(function(e){
+    showErr('初始化有问题：'+e); reload();
+  });
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
+else boot();
+</script>
+</body>
+</html>
